@@ -15,7 +15,7 @@ services:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
     networks:
-      - default
+      - autozap_network
 
   # Chatwoot - Plataforma de atendimento
   chatwoot:
@@ -33,9 +33,9 @@ services:
     command: ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
     restart: unless-stopped
     networks:
-      - default
+      - autozap_network
 
-  # Postgres - Banco de dados do Chatwoot
+  # PostgreSQL - Banco de dados do Chatwoot
   chatwoot_postgres:
     image: postgres:14
     container_name: chatwoot_postgres
@@ -45,17 +45,19 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
     networks:
-      - default
+      - autozap_network
 
-  # Redis - Para cache do Chatwoot
+  # Redis - Cache do Chatwoot
   chatwoot_redis:
     image: redis:7
     container_name: chatwoot_redis
+    restart: unless-stopped
     networks:
-      - default
+      - autozap_network
 
-  # Evolution API
+  # Evolution API - Serviço externo
   evolutionapi:
     container_name: evolutionapi
     image: atendai/evolution-api
@@ -118,7 +120,7 @@ services:
       - "8080"
     restart: unless-stopped
     networks:
-      - default
+      - autozap_network
 
 volumes:
   n8n_data:
@@ -128,5 +130,5 @@ volumes:
   evolution_store:
 
 networks:
-  default:
-    name: autozap_network
+  autozap_network:
+    driver: bridge
