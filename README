@@ -35,3 +35,4 @@ Este projeto configura um ambiente completo com:
 ```bash
 git clone https://github.com/seu-usuario/auto-zap.git
 cd auto-zap
+docker-compose up -d
