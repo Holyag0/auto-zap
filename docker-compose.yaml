@@ -1,9 +1,8 @@
 version: '3'
-
 services:
   base: &base
     image: chatwoot/chatwoot:latest
-    env_file: .env ## Change this file for customized env variables
+    env_file: .env
     volumes:
       - /data/storage:/app/storage
 
@@ -38,13 +37,13 @@ services:
     image: pgvector/pgvector:pg16
     restart: always
     ports:
-      - '127.0.0.1:5433:5432'  # Alterei a porta externa para 5433
+      - '127.0.0.1:5433:5432'
     volumes:
       - /data/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   redis:
     image: redis:alpine
@@ -66,12 +65,58 @@ services:
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=suasenhaforte
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
       - TZ=America/Sao_Paulo
     depends_on:
       - redis
+
+  evolution-api:
+    container_name: evolution_api
+    image: atendai/evolution-api
+    restart: always
+    ports:
+      - '8081:8080'
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - SERVER_URL=http://localhost:8080
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://user:pass@evolution-db:5432/evolution?schema=public
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evolution-redis:6379/6
+      - AUTHENTICATION_API_KEY=429683C4C977415CAAFCCE10F7D57E11
+      - LANGUAGE=en
+    volumes:
+      - evolution_store:/evolution/store
+      - evolution_instances:/evolution/instances
+    depends_on:
+      - evolution-db
+      - evolution-redis
+
+  evolution-db:
+    container_name: evolution_db
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_db_data:/var/lib/postgresql/data
+
+  evolution-redis:
+    container_name: evolution_redis
+    image: redis:7
+    restart: always
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - evolution_redis_data:/data
 
 volumes:
   n8n_data:
   postgres:
   redis:
+  evolution_store:
+  evolution_instances:
+  evolution_db_data:
+  evolution_redis_data:
