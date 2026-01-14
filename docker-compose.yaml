@@ -183,6 +183,31 @@ services:
     volumes:
       - evolution_redis_data:/data
 
+  # Workspace Laravel para FAQ System
+  faq-workspace:
+    container_name: faq_workspace
+    image: laravelsail/php83-composer:latest
+    restart: unless-stopped
+    working_dir: /var/www/faq-cabemce
+    ports:
+      - '127.0.0.1:8080:8000'
+    volumes:
+      - ./faq-cabemce:/var/www/faq-cabemce
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
+      - DB_HOST=auto-zap-postgres-1
+      - DB_PORT=5432
+      - DB_DATABASE=faq_system
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres_teste_123
+    depends_on:
+      - postgres
+    networks:
+      - default
+    command: bash -c "apt-get update && apt-get install -y postgresql-client libpq-dev libicu-dev && docker-php-ext-install pdo_pgsql pgsql intl && cd /var/www/faq-cabemce && php artisan serve --host=0.0.0.0 --port=8000"
+
 volumes:
   chatwoot_storage:
   postgres_data:
