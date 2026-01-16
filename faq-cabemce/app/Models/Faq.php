@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Faq extends Model
 {
     /**
      * Conexão do banco de dados.
      */
-    protected $connection = 'chatwoot';
+    protected $connection = 'pgsql_chatwoot';
 
     /**
      * Nome da tabela no banco de dados.
@@ -23,6 +24,7 @@ class Faq extends Model
         'pergunta',
         'resposta',
         'categoria',
+        'categoria_id',
         'ativo',
     ];
 
@@ -36,6 +38,14 @@ class Faq extends Model
     ];
 
     /**
+     * Relacionamento com Categoria
+     */
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'categoria_id');
+    }
+
+    /**
      * Scope para buscar apenas perguntas ativas.
      */
     public function scopeAtivo($query)
@@ -44,10 +54,19 @@ class Faq extends Model
     }
 
     /**
-     * Scope para filtrar por categoria.
+     * Scope para filtrar por categoria (legado - string).
      */
     public function scopeCategoria($query, $categoria)
     {
         return $query->where('categoria', $categoria);
     }
+
+    /**
+     * Scope para filtrar por categoria_id.
+     */
+    public function scopePorCategoria($query, $categoriaId)
+    {
+        return $query->where('categoria_id', $categoriaId);
+    }
 }
+

@@ -11,7 +11,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+        
+        $middleware->web(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+        
+        $middleware->validateCsrfTokens(except: [
+            'livewire/*',
+            'livewire/update',
+            'livewire/upload-file',
+            'livewire/preview-file/*',
+            'storage/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

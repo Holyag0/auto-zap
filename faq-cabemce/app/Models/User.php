@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -21,6 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'setor_id',
+        'cargo_id',
     ];
 
     /**
@@ -44,5 +48,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Relacionamento com setor
+     */
+    public function setor(): BelongsTo
+    {
+        return $this->belongsTo(Setor::class);
+    }
+
+    /**
+     * Relacionamento com cargo
+     */
+    public function cargo(): BelongsTo
+    {
+        return $this->belongsTo(Cargo::class);
+    }
+
+    /**
+     * Relacionamento com demandas onde o usuário é responsável
+     */
+    public function demandasResponsavel(): HasMany
+    {
+        return $this->hasMany(Demanda::class, 'responsavel_id');
     }
 }

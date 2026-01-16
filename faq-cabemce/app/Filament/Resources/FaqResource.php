@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FaqResource\Pages;
 use App\Filament\Resources\FaqResource\RelationManagers;
+use App\Models\Categoria;
 use App\Models\Faq;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -27,7 +28,9 @@ class FaqResource extends Resource
     
     protected static ?string $pluralModelLabel = 'FAQs';
     
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationGroup = 'Gerenciamento FAQ';
+    
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -51,9 +54,33 @@ class FaqResource extends Resource
                             ->placeholder('Digite a resposta aqui...')
                             ->columnSpanFull(),
                         
-                        Forms\Components\TextInput::make('categoria')
+                        Forms\Components\Select::make('categoria_id')
                             ->label('Categoria')
+                            ->relationship('categoria', 'nome')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('nome')
+                                    ->required()
+                                    ->maxLength(100),
+                                Forms\Components\Textarea::make('descricao')
+                                    ->rows(2),
+                                Forms\Components\ColorPicker::make('cor'),
+                                Forms\Components\TextInput::make('ordem')
+                                    ->numeric()
+                                    ->default(0),
+                            ])
+                            ->placeholder('Selecione uma categoria')
+                            ->helperText('Selecione a categoria ou crie uma nova'),
+                        
+                        Forms\Components\TextInput::make('categoria')
+                            ->label('Categoria (legado)')
                             ->maxLength(100)
+                            ->disabled()
+                            ->helperText('Campo legado - use o campo acima')
+                            ->dehydrated(false)
+                            ->visible(fn ($record) => $record && $record->categoria)
                             ->placeholder('Ex: Contatos, Serviços, Endereços, etc.')
                             ->datalist([
                                 'Contatos',
@@ -76,6 +103,7 @@ class FaqResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('categoria'))
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
@@ -108,12 +136,14 @@ class FaqResource extends Resource
                     })
                     ->toggleable(),
                 
-                Tables\Columns\TextColumn::make('categoria')
+                Tables\Columns\TextColumn::make('categoria.nome')
                     ->label('Categoria')
                     ->searchable()
                     ->sortable()
                     ->badge()
-                    ->color('info'),
+                    ->color(fn ($record) => is_object($record->categoria) ? 'primary' : 'gray')
+                    ->icon(fn ($record) => is_object($record->categoria) ? $record->categoria->icone : null)
+                    ->tooltip(fn ($record) => is_object($record->categoria) ? $record->categoria->descricao : null),
                 
                 Tables\Columns\IconColumn::make('ativo')
                     ->label('Status')
@@ -137,15 +167,11 @@ class FaqResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('categoria')
+                SelectFilter::make('categoria_id')
                     ->label('Categoria')
-                    ->options(function () {
-                        return Faq::query()
-                            ->whereNotNull('categoria')
-                            ->distinct()
-                            ->pluck('categoria', 'categoria')
-                            ->toArray();
-                    }),
+                    ->relationship('categoria', 'nome')
+                    ->searchable()
+                    ->preload(),
                 
                 TernaryFilter::make('ativo')
                     ->label('Status')

@@ -21,15 +21,22 @@ class TestarPergunta extends Page implements HasForms
     
     protected static ?string $title = 'Testar Perguntas no Modelo';
     
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationGroup = 'Gerenciamento FAQ';
+    
+    protected static ?int $navigationSort = 3;
 
     protected static string $view = 'filament.pages.testar-pergunta';
     
-    public ?string $pergunta = '';
+    public ?array $data = [];
     
     public ?string $resposta = null;
     
     public bool $loading = false;
+    
+    public function mount(): void
+    {
+        $this->form->fill();
+    }
 
     public function form(Form $form): Form
     {
@@ -49,14 +56,24 @@ class TestarPergunta extends Page implements HasForms
 
     public function testar(): void
     {
-        $this->validate();
+        // Valida o formulário
+        $data = $this->form->getState();
+        
+        if (empty($data['pergunta'])) {
+            Notification::make()
+                ->title('Erro')
+                ->body('Por favor, digite uma pergunta.')
+                ->danger()
+                ->send();
+            return;
+        }
 
         try {
             $this->loading = true;
             $this->resposta = null;
 
             $service = app(N8nService::class);
-            $resultado = $service->testarPergunta($this->pergunta);
+            $resultado = $service->testarPergunta($data['pergunta']);
 
             if ($resultado['success']) {
                 $this->resposta = $resultado['resposta'];
@@ -68,11 +85,11 @@ class TestarPergunta extends Page implements HasForms
             } else {
                 Notification::make()
                     ->title('Erro ao consultar o modelo')
-                    ->body($resultado['error'])
+                    ->body($resultado['resposta'] ?? 'Erro desconhecido')
                     ->danger()
                     ->send();
                     
-                $this->resposta = 'Erro: ' . $resultado['error'];
+                $this->resposta = 'Erro: ' . ($resultado['resposta'] ?? 'Erro desconhecido');
             }
 
         } catch (\Exception $e) {
@@ -90,8 +107,13 @@ class TestarPergunta extends Page implements HasForms
 
     public function limpar(): void
     {
-        $this->pergunta = '';
+        $this->data = [];
         $this->resposta = null;
         $this->form->fill();
+        
+        Notification::make()
+            ->title('Formulário limpo')
+            ->success()
+            ->send();
     }
 }
