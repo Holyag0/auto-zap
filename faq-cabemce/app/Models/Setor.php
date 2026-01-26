@@ -38,6 +38,22 @@ class Setor extends Model
     }
 
     /**
+     * Relacionamento com senhas
+     */
+    public function senhas(): HasMany
+    {
+        return $this->hasMany(Senha::class, 'setor_id');
+    }
+
+    /**
+     * Relacionamento com configuração de senhas
+     */
+    public function configuracao()
+    {
+        return $this->hasOne(ConfiguracaoSetor::class, 'setor_id');
+    }
+
+    /**
      * Scope para setores ativos
      */
     public function scopeAtivos($query)

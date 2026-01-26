@@ -27,9 +27,50 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // Nome e Branding
+            ->brandName('CABEMCE FAQ')
+            ->brandLogo(asset('images/logo-cabemce.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/logo-cabemce.png'))
+            // Cores da CABEMCE (Azul e Vermelho)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => [
+                    50 => '#eff6ff',
+                    100 => '#dbeafe',
+                    200 => '#bfdbfe',
+                    300 => '#93c5fd',
+                    400 => '#60a5fa',
+                    500 => '#1e40af', // Azul CABEMCE
+                    600 => '#1e3a8a',
+                    700 => '#1e3a8a',
+                    800 => '#1e3a8a',
+                    900 => '#172554',
+                    950 => '#0f172a',
+                ],
+                'danger' => [
+                    50 => '#fef2f2',
+                    100 => '#fee2e2',
+                    200 => '#fecaca',
+                    300 => '#fca5a5',
+                    400 => '#f87171',
+                    500 => '#dc2626', // Vermelho CABEMCE
+                    600 => '#b91c1c',
+                    700 => '#991b1b',
+                    800 => '#7f1d1d',
+                    900 => '#7f1d1d',
+                    950 => '#450a0a',
+                ],
+                'success' => Color::Green,
+                'warning' => Color::Amber,
             ])
+            // Configurações visuais
+            ->sidebarCollapsibleOnDesktop()
+            ->maxContentWidth('full')
+            // Tema customizado CABEMCE (CSS direto)
+            ->renderHook(
+                'panels::styles.before',
+                fn () => '<link rel="stylesheet" href="' . asset('css/cabemce-theme.css') . '">'
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
