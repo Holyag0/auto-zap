@@ -1,0 +1,27 @@
+version: "2"
+# O authtoken será passado via variável de ambiente NGROK_AUTHTOKEN
+
+tunnels:
+  # Túnel para o sistema FAQ (Laravel/Filament)
+  faq-system:
+    addr: faq_workspace:8000
+    proto: http
+    inspect: true
+
+  # Túnel para o Chatwoot (opcional - descomente se necessário)
+  # chatwoot:
+  #   addr: rails:3000
+  #   proto: http
+  #   inspect: true
+
+  # Túnel para o n8n (opcional - descomente se necessário)
+  # n8n:
+  #   addr: n8n:5678
+  #   proto: http
+  #   inspect: true
+
+  # Túnel para Evolution API (opcional - descomente se necessário)
+  # evolution-api:
+  #   addr: evolution_api:8080
+  #   proto: http
+  #   inspect: true

@@ -71,6 +71,8 @@ services:
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     restart: always
+    networks:
+      - default
 
   sidekiq:
     <<: *base
@@ -91,6 +93,8 @@ services:
       - REDIS_URL=redis://:redis_teste_123@redis:6379
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
     restart: always
+    networks:
+      - default
 
   postgres:
     image: pgvector/pgvector:pg16
@@ -109,6 +113,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   redis:
     image: redis:alpine
@@ -124,6 +130,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   n8n:
     image: docker.n8n.io/n8nio/n8n
@@ -139,11 +147,14 @@ services:
       - N8N_SECURE_COOKIE=false
       - TZ=America/Sao_Paulo
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    networks:
+      - default
 
   evolution-api:
     container_name: evolution_api
-    image: atendai/evolution-api
+    image: atendai/evolution-api:latest
     restart: always
     ports:
       - '127.0.0.1:8081:8080'
@@ -157,12 +168,17 @@ services:
       - CACHE_REDIS_URI=redis://evolution-redis:6379/6
       - AUTHENTICATION_API_KEY=429683C4C977415CAAFCCE10F7D57E11
       - LANGUAGE=pt-BR
+      - CONFIG_SESSION_PHONE_VERSION=2.3000.1032622985
     volumes:
       - evolution_store:/evolution/store
       - evolution_instances:/evolution/instances
     depends_on:
-      - evolution-db
-      - evolution-redis
+      evolution-db:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    networks:
+      - default
 
   evolution-db:
     container_name: evolution_db
@@ -174,6 +190,14 @@ services:
       - POSTGRES_DB=evolution
     volumes:
       - evolution_db_data:/var/lib/postgresql/data
+    # ADICIONADO: Health check para aguardar postgres ficar pronto
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution_user -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
 
   evolution-redis:
     container_name: evolution_redis
@@ -182,6 +206,14 @@ services:
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     volumes:
       - evolution_redis_data:/data
+    # ADICIONADO: Health check para aguardar redis ficar pronto
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
 
   # Workspace Laravel para FAQ System
   faq-workspace:
@@ -197,16 +229,40 @@ services:
       - APP_ENV=local
       - APP_DEBUG=true
       - DB_CONNECTION=pgsql
-      - DB_HOST=auto-zap-postgres-1
+      - DB_HOST=postgres
       - DB_PORT=5432
       - DB_DATABASE=faq_system
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres_teste_123
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - default
     command: bash -c "apt-get update && apt-get install -y postgresql-client libpq-dev libicu-dev && docker-php-ext-install pdo_pgsql pgsql intl && cd /var/www/faq-cabemce && php artisan serve --host=0.0.0.0 --port=8000"
+
+  # 🌐 Ngrok - Túnel para expor serviços localmente
+  ngrok:
+    container_name: ngrok_tunnel
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    ports:
+      - '4040:4040'  # Interface web do ngrok
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}  # Token do ngrok (obrigatório)
+    command:
+      - "start"
+      - "--authtoken"
+      - "${NGROK_AUTHTOKEN}"
+      - "--config"
+      - "/etc/ngrok.yml"
+      - "--all"
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml:ro
+    depends_on:
+      - faq-workspace
+    networks:
+      - default
 
 volumes:
   chatwoot_storage:
@@ -217,3 +273,8 @@ volumes:
   evolution_instances:
   evolution_db_data:
   evolution_redis_data:
+
+networks:
+  default:
+    name: auto-zap-network
+    driver: bridge

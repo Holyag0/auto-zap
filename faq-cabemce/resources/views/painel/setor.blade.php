@@ -179,13 +179,24 @@
 
                 async atualizarDados() {
                     try {
+                        // IMPORTANTE: Esta rota retorna apenas senhas do setor específico ($setor->id)
+                        // Cada painel monitora apenas seu próprio setor, garantindo isolamento
                         const response = await fetch('{{ route("painel.dados", $setor->id) }}');
                         const data = await response.json();
                         
-                        // Verifica se mudou a senha
-                        if (this.senhaAtual?.id !== data.senha_atual?.id) {
+                        // Verifica se uma nova senha foi chamada neste setor específico
+                        // O som só será reproduzido se a senha for deste setor
+                        const senhaAnteriorId = this.senhaAtual?.id;
+                        const senhaNovaId = data.senha_atual?.id;
+                        
+                        if (senhaAnteriorId !== senhaNovaId && senhaNovaId) {
+                            // Nova senha foi chamada neste setor - toca o alerta sonoro
+                            // O som só toca no painel do setor correspondente
                             this.senhaAtual = data.senha_atual;
                             this.tocarSom();
+                        } else if (senhaAnteriorId !== senhaNovaId) {
+                            // Senha foi removida (não toca som)
+                            this.senhaAtual = data.senha_atual;
                         }
                         
                         this.historico = data.historico;
@@ -196,9 +207,13 @@
                 },
 
                 tocarSom() {
-                    // Som de notificação (opcional)
-                    // const audio = new Audio('/sounds/notification.mp3');
-                    // audio.play().catch(() => {});
+                    // Toca o alerta sonoro quando uma nova senha é chamada neste setor específico
+                    // Este som só será reproduzido no painel do setor correspondente
+                    const audio = new Audio('/sounds/alerta-oxigeno.mp3');
+                    audio.volume = 0.8; // Volume em 80%
+                    audio.play().catch(error => {
+                        console.log('Erro ao reproduzir som:', error);
+                    });
                 }
             }
         }
