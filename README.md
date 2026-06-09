@@ -51,9 +51,7 @@ export NGROK_AUTHTOKEN=seu_token_aqui
 
 📚 **Documentação completa**: Veja [NGROK_SETUP.md](./NGROK_SETUP.md)
 
----
-
-## 🌐 Expor Sistema com Ngrok
+---## 🌐 Expor Sistema com Ngrok
 
 O projeto inclui configuração do ngrok em container Docker para expor os serviços localmente na internet.
 

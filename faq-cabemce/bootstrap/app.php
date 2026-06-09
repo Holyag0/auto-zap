@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'livewire/upload-file',
             'livewire/preview-file/*',
             'storage/*',
+            'webhook/*', // Excluir todos os webhooks da verificação CSRF
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

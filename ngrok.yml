@@ -3,8 +3,11 @@ version: "2"
 
 tunnels:
   # Túnel para o sistema FAQ (Laravel/Filament)
+  # IMPORTANTE: Se ngrok roda em container, usar host.docker.internal:8080 (macOS/Windows)
+  # ou faq-workspace:8000 se estiver na mesma rede Docker
+  # Se ngrok roda no host, usar localhost:8080
   faq-system:
-    addr: faq_workspace:8000
+    addr: host.docker.internal:8080
     proto: http
     inspect: true
 

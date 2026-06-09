@@ -18,5 +18,6 @@ class ValidateCsrfToken extends Middleware
         'livewire/preview-file/*',
         'storage/*',
         'admin/*',
+        'webhook/*', // Excluir todos os webhooks da verificação CSRF
     ];
 }

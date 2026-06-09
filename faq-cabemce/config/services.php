@@ -36,8 +36,8 @@ return [
     ],
 
     'n8n' => [
-        'webhook_url' => env('N8N_WEBHOOK_URL', 'http://auto-zap-n8n-1:5678/webhook'),
-        'base_url' => env('N8N_BASE_URL', 'http://auto-zap-n8n-1:5678'),
+        'webhook_url' => env('N8N_WEBHOOK_URL', 'http://n8n:5678/webhook/7ccef290-0864-4a58-b86f-595fc57766fb'),
+        'base_url' => env('N8N_BASE_URL', 'http://n8n:5678'),
     ],
 
 ];

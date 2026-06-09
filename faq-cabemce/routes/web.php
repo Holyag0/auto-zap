@@ -9,6 +9,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Webhook do Evolution API -> Chatwoot
+Route::post('/webhook/evolution', [App\Http\Controllers\EvolutionWebhookController::class, 'handle']);
+
+// Webhook do Chatwoot -> n8n -> Evolution API
+Route::post('/webhook/chatwoot', [App\Http\Controllers\ChatwootWebhookController::class, 'handle']);
+
 // Rotas Públicas - Painel de Senhas
 Route::prefix('painel')->name('painel.')->group(function () {
     Route::get('/', [PainelSenhaController::class, 'index'])->name('index');

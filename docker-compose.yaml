@@ -14,9 +14,11 @@ services:
         condition: service_healthy
     environment:
       - RAILS_ENV=production
-      - SECRET_KEY_BASE=17b5a9415c4337cd47e3bb9bb38dfc1126681a031d92413e1548e471ebb79e9f5ecdf5cd21aacb2dcd6015f359f1107a9ed876d322f19cdf719954794d2b55ed
-      - DATABASE_URL=postgresql://postgres:postgres_teste_123@postgres:5432/chatwoot
-      - REDIS_URL=redis://:redis_teste_123@redis:6379
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - CHATWOOT_ADMIN_EMAIL=${CHATWOOT_ADMIN_EMAIL:-admin@localhost.com}
+      - CHATWOOT_ADMIN_PASSWORD=${CHATWOOT_ADMIN_PASSWORD}
     command: >
       sh -c "
       echo '🔧 Iniciando setup do Chatwoot...' &&
@@ -24,19 +26,21 @@ services:
       echo '👤 Criando usuário admin...' &&
       bundle exec rails runner \"
       begin
-        if User.where(email: 'admin@localhost.com').exists?
+        admin_email = ENV['CHATWOOT_ADMIN_EMAIL'] || 'admin@localhost.com'
+        admin_password = ENV['CHATWOOT_ADMIN_PASSWORD']
+        if User.where(email: admin_email).exists?
           puts '✅ Usuário admin já existe'
         else
           user = User.create!(
             name: 'Administrador',
-            email: 'admin@localhost.com',
-            password: '#Cabemce2025#',
-            password_confirmation: '#Cabemce2025#',
+            email: admin_email,
+            password: admin_password,
+            password_confirmation: admin_password,
             confirmed_at: Time.current
           )
           account = Account.create!(name: 'Minha Empresa')
           AccountUser.create!(account: account, user: user, role: 'administrator')
-          puts '✅ Usuário admin criado: admin@localhost.com / '#Cabemce2025#
+          puts '✅ Usuário admin criado: ' + admin_email
         end
       rescue => e
         puts 'Erro: ' + e.message
@@ -61,13 +65,13 @@ services:
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
-      # Configurações de teste do Chatwoot
-      - SECRET_KEY_BASE=17b5a9415c4337cd47e3bb9bb38dfc1126681a031d92413e1548e471ebb79e9f5ecdf5cd21aacb2dcd6015f359f1107a9ed876d322f19cdf719954794d2b55ed
+      # Configurações do Chatwoot
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
       - FRONTEND_URL=http://localhost:3000
       - REQUIRE_EMAIL_CONFIRMATION=false
       - ENABLE_ACCOUNT_SIGNUP=true
-      - DATABASE_URL=postgresql://postgres:postgres_teste_123@postgres:5432/chatwoot
-      - REDIS_URL=redis://:redis_teste_123@redis:6379
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     restart: always
@@ -87,10 +91,10 @@ services:
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
-      # Configurações de teste do Chatwoot - CORRIGIDO: mesma SECRET_KEY_BASE
-      - SECRET_KEY_BASE=17b5a9415c4337cd47e3bb9bb38dfc1126681a031d92413e1548e471ebb79e9f5ecdf5cd21aacb2dcd6015f359f1107a9ed876d322f19cdf719954794d2b55ed
-      - DATABASE_URL=postgresql://postgres:postgres_teste_123@postgres:5432/chatwoot
-      - REDIS_URL=redis://:redis_teste_123@redis:6379
+      # Configurações do Chatwoot
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
     restart: always
     networks:
@@ -104,9 +108,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=chatwoot
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_teste_123
+      - POSTGRES_DB=${POSTGRES_DB:-chatwoot}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     # ADICIONADO: Health check para aguardar postgres ficar pronto
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d chatwoot"]
@@ -114,19 +118,22 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - default
+      default:
+        aliases:
+          - postgres
+          - auto-zap-postgres-1
 
   redis:
     image: redis:alpine
     restart: always
-    command: ["sh", "-c", "redis-server --requirepass \"redis_teste_123\""]
+    command: ["sh", "-c", "redis-server --requirepass \"${REDIS_PASSWORD}\""]
     volumes:
       - redis_data:/data
     ports:
       - '127.0.0.1:6379:6379'
     # ADICIONADO: Health check para aguardar redis ficar pronto
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redis_teste_123", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -142,8 +149,8 @@ services:
       - n8n_data:/home/node/.n8n
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=teste_123
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       - N8N_SECURE_COOKIE=false
       - TZ=America/Sao_Paulo
     depends_on:
@@ -163,10 +170,10 @@ services:
       - SERVER_PORT=8080
       - SERVER_URL=http://localhost:8081
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://evolution_user:evolution_teste_123@evolution-db:5432/evolution?schema=public
+      - DATABASE_CONNECTION_URI=postgresql://${EVOLUTION_DB_USER:-evolution_user}:${EVOLUTION_DB_PASSWORD}@evolution-db:5432/evolution?schema=public
       - CACHE_REDIS_ENABLED=true
       - CACHE_REDIS_URI=redis://evolution-redis:6379/6
-      - AUTHENTICATION_API_KEY=429683C4C977415CAAFCCE10F7D57E11
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - LANGUAGE=pt-BR
       - CONFIG_SESSION_PHONE_VERSION=2.3000.1032622985
     volumes:
@@ -185,14 +192,14 @@ services:
     image: postgres:15
     restart: always
     environment:
-      - POSTGRES_USER=evolution_user
-      - POSTGRES_PASSWORD=evolution_teste_123
+      - POSTGRES_USER=${EVOLUTION_DB_USER:-evolution_user}
+      - POSTGRES_PASSWORD=${EVOLUTION_DB_PASSWORD}
       - POSTGRES_DB=evolution
     volumes:
       - evolution_db_data:/var/lib/postgresql/data
     # ADICIONADO: Health check para aguardar postgres ficar pronto
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U evolution_user -d evolution"]
+      test: ["CMD-SHELL", "pg_isready -U ${EVOLUTION_DB_USER:-evolution_user} -d evolution"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -231,14 +238,17 @@ services:
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=faq_system
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres_teste_123
+      - DB_DATABASE=${FAQ_DB_NAME:-faq_system}
+      - DB_USERNAME=${FAQ_DB_USER:-postgres}
+      - DB_PASSWORD=${FAQ_DB_PASSWORD:-${POSTGRES_PASSWORD}}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - default
+      default:
+        aliases:
+          - faq-workspace
+          - faq_workspace
     command: bash -c "apt-get update && apt-get install -y postgresql-client libpq-dev libicu-dev && docker-php-ext-install pdo_pgsql pgsql intl && cd /var/www/faq-cabemce && php artisan serve --host=0.0.0.0 --port=8000"
 
   # 🌐 Ngrok - Túnel para expor serviços localmente
@@ -263,6 +273,8 @@ services:
       - faq-workspace
     networks:
       - default
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Permite acesso ao host a partir do container (macOS/Windows)
 
 volumes:
   chatwoot_storage:
